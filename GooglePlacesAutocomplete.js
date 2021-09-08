@@ -137,9 +137,9 @@ export const GooglePlacesAutocomplete = forwardRef((props, ref) => {
 
   const [stateText, setStateText] = useState(props?.textInputProps?.defaultValue || '');
   const [dataSource, setDataSource] = useState(buildRowsFromResults([]));
-  const [listViewDisplayed, setListViewDisplayed] = useState(
-    props.listViewDisplayed === 'auto' ? false : props.listViewDisplayed,
-  );
+  // const [listViewDisplayed, setListViewDisplayed] = useState(
+  //   props.listViewDisplayed === 'auto' ? false : props.listViewDisplayed,
+  // );
   const [url] = useState(getRequestUrl(props.requestUrl));
 
   const inputRef = useRef();
@@ -693,7 +693,11 @@ export const GooglePlacesAutocomplete = forwardRef((props, ref) => {
     inputRef?.current?.blur();
   };
 
-  const _onFocus = () => setListViewDisplayed(true);
+  // const _onFocus = () => setListViewDisplayed(true);
+  const _onFocus = () => {
+    if (typeof props?.textInputProps?.onFocus === 'function')
+      props.textInputProps.onFocus()
+  }
 
   const _renderPoweredLogo = () => {
     if (!_shouldShowPoweredLogo()) {
@@ -754,15 +758,15 @@ export const GooglePlacesAutocomplete = forwardRef((props, ref) => {
   const _getFlatList = () => {
     const keyGenerator = () => Math.random().toString(36).substr(2, 10);
 
-    // if (dataSource?.length <= 0)
-    //   return null
+    if (dataSource?.length <= 0)
+      return null
 
     if (
       supportedPlatform() &&
       (stateText !== '' ||
         props.predefinedPlaces.length > 0 ||
         props.currentLocation === true) &&
-      listViewDisplayed === true
+      props.listViewDisplayed === true
     ) {
       return (
         <Portal hostName={props.portalHostName}>
