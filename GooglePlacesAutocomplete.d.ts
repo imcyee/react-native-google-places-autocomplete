@@ -425,8 +425,17 @@ interface GooglePlacesAutocompleteProps {
   suppressDefaultStyles?: boolean;
   textInputHide?: boolean;
   /** text input props */
-  textInputProps?: TextInputProps | Object;
+  textInputProps?: TextInputProps & {
+    defaultValue?: string,
+    onChangeText?: (t: string) => void
+  } | Object;
   timeout?: number;
+  color?: string;  /** text placeholder color */
+  title?: string; /** text placeholder title */
+
+  /** Portal */
+  portalHostName?: string
+
 }
 
 export type GooglePlacesAutocompleteRef = {
@@ -437,5 +446,5 @@ export type GooglePlacesAutocompleteRef = {
 
 export const GooglePlacesAutocomplete: React.ForwardRefExoticComponent<
   React.PropsWithoutRef<GooglePlacesAutocompleteProps> &
-    React.RefAttributes<GooglePlacesAutocompleteRef>
+  React.RefAttributes<GooglePlacesAutocompleteRef>
 >;

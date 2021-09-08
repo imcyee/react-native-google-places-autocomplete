@@ -1,4 +1,5 @@
 /* eslint-disable react-native/no-inline-styles */
+import { Portal } from '@gorhom/portal';
 import debounce from 'lodash.debounce';
 import PropTypes from 'prop-types';
 import Qs from 'qs';
@@ -22,6 +23,7 @@ import {
   TouchableHighlight,
   View,
 } from 'react-native';
+import { useUpdateEffect } from 'react-use';
 
 const defaultStyles = {
   container: {
@@ -133,7 +135,7 @@ export const GooglePlacesAutocomplete = forwardRef((props, ref) => {
     );
   };
 
-  const [stateText, setStateText] = useState('');
+  const [stateText, setStateText] = useState(props?.textInputProps?.defaultValue || '');
   const [dataSource, setDataSource] = useState(buildRowsFromResults([]));
   const [listViewDisplayed, setListViewDisplayed] = useState(
     props.listViewDisplayed === 'auto' ? false : props.listViewDisplayed,
@@ -142,7 +144,8 @@ export const GooglePlacesAutocomplete = forwardRef((props, ref) => {
 
   const inputRef = useRef();
 
-  useEffect(() => {
+  // skip onmount   
+  useUpdateEffect(() => {
     // This will load the default value's search results after the view has
     // been rendered
     _handleChangeText(stateText);
@@ -300,12 +303,12 @@ export const GooglePlacesAutocomplete = forwardRef((props, ref) => {
       request.open(
         'GET',
         `${url}/place/details/json?` +
-          Qs.stringify({
-            key: props.query.key,
-            placeid: rowData.place_id,
-            language: props.query.language,
-            ...props.GooglePlacesDetailsQuery,
-          }),
+        Qs.stringify({
+          key: props.query.key,
+          placeid: rowData.place_id,
+          language: props.query.language,
+          ...props.GooglePlacesDetailsQuery,
+        }),
       );
 
       request.withCredentials = requestShouldUseWithCredentials();
@@ -497,9 +500,9 @@ export const GooglePlacesAutocomplete = forwardRef((props, ref) => {
             const results =
               props.nearbyPlacesAPI === 'GoogleReverseGeocoding'
                 ? _filterResultsByTypes(
-                    responseJSON.predictions,
-                    props.filterReverseGeocodingByTypes,
-                  )
+                  responseJSON.predictions,
+                  props.filterReverseGeocodingByTypes,
+                )
                 : responseJSON.predictions;
 
             _results = results;
@@ -527,9 +530,9 @@ export const GooglePlacesAutocomplete = forwardRef((props, ref) => {
       request.open(
         'GET',
         `${url}/place/autocomplete/json?input=` +
-          encodeURIComponent(text) +
-          '&' +
-          Qs.stringify(props.query),
+        encodeURIComponent(text) +
+        '&' +
+        Qs.stringify(props.query),
       );
 
       request.withCredentials = requestShouldUseWithCredentials();
@@ -679,11 +682,14 @@ export const GooglePlacesAutocomplete = forwardRef((props, ref) => {
   };
 
   const _onBlur = (e) => {
+    if (typeof props.textInputProps?.onBlur === 'function')
+      props.textInputProps?.onBlur(e)
+
     if (e && isNewFocusInAutocompleteResultList(e)) return;
 
-    if (!props.keepResultsAfterBlur) {
-      setListViewDisplayed(false);
-    }
+    // if (!props.keepResultsAfterBlur) {
+    //   setListViewDisplayed(false);
+    // }
     inputRef?.current?.blur();
   };
 
@@ -748,6 +754,9 @@ export const GooglePlacesAutocomplete = forwardRef((props, ref) => {
   const _getFlatList = () => {
     const keyGenerator = () => Math.random().toString(36).substr(2, 10);
 
+    // if (dataSource?.length <= 0)
+    //   return null
+
     if (
       supportedPlatform() &&
       (stateText !== '' ||
@@ -756,28 +765,30 @@ export const GooglePlacesAutocomplete = forwardRef((props, ref) => {
       listViewDisplayed === true
     ) {
       return (
-        <FlatList
-          nativeID='result-list-id'
-          scrollEnabled={!props.disableScroll}
-          style={[
-            props.suppressDefaultStyles ? {} : defaultStyles.listView,
-            props.styles.listView,
-          ]}
-          data={dataSource}
-          keyExtractor={keyGenerator}
-          extraData={[dataSource, props]}
-          ItemSeparatorComponent={_renderSeparator}
-          renderItem={({ item, index }) => _renderRow(item, index)}
-          ListEmptyComponent={
-            stateText.length > props.minLength && props.listEmptyComponent
-          }
-          ListHeaderComponent={
-            props.renderHeaderComponent &&
-            props.renderHeaderComponent(stateText)
-          }
-          ListFooterComponent={_renderPoweredLogo}
-          {...props}
-        />
+        <Portal hostName={props.portalHostName}>
+          <FlatList
+            nativeID='result-list-id'
+            scrollEnabled={!props.disableScroll}
+            style={[
+              props.suppressDefaultStyles ? {} : defaultStyles.listView,
+              props.styles.listView,
+            ]}
+            data={dataSource}
+            keyExtractor={keyGenerator}
+            extraData={[dataSource, props]}
+            ItemSeparatorComponent={_renderSeparator}
+            renderItem={({ item, index }) => _renderRow(item, index)}
+            ListEmptyComponent={
+              stateText.length > props.minLength && props.listEmptyComponent
+            }
+            ListHeaderComponent={
+              props.renderHeaderComponent &&
+              props.renderHeaderComponent(stateText)
+            }
+            ListFooterComponent={_renderPoweredLogo}
+            {...props}
+          />
+        </Portal>
       );
     }
 
@@ -809,34 +820,37 @@ export const GooglePlacesAutocomplete = forwardRef((props, ref) => {
           ]}
         >
           {_renderLeftButton()}
-          <TextInputComp
-            ref={inputRef}
-            style={[
-              props.suppressDefaultStyles ? {} : defaultStyles.textInput,
-              props.styles.textInput,
-            ]}
-            value={stateText}
-            placeholder={props.placeholder}
-            onFocus={
-              onFocus
-                ? () => {
+          <View style={{ flex: 1, paddingVertical: 8 }}>
+            <Text color={props.color}>{props.title}</Text>
+            <TextInputComp
+              ref={inputRef}
+              style={[
+                props.suppressDefaultStyles ? {} : defaultStyles.textInput,
+                props.styles.textInput,
+              ]}
+              value={stateText}
+              placeholder={props.placeholder}
+              onFocus={
+                onFocus
+                  ? () => {
                     _onFocus();
                     onFocus();
                   }
-                : _onFocus
-            }
-            onBlur={
-              onBlur
-                ? (e) => {
-                    _onBlur(e);
-                    onBlur();
-                  }
-                : _onBlur
-            }
-            clearButtonMode={clearButtonMode || 'while-editing'}
-            onChangeText={_handleChangeText}
-            {...userProps}
-          />
+                  : _onFocus
+              }
+              // onBlur={
+              //   onBlur
+              //     ? (e) => {
+              //         _onBlur(e);
+              //         onBlur();
+              //       }
+              //     : _onBlur
+              // }
+              clearButtonMode={clearButtonMode || 'while-editing'}
+              onChangeText={_handleChangeText}
+              {...userProps}
+            />
+          </View>
           {_renderRightButton()}
         </View>
       )}
@@ -922,9 +936,9 @@ GooglePlacesAutocomplete.defaultProps = {
   minLength: 0,
   nearbyPlacesAPI: 'GooglePlacesSearch',
   numberOfLines: 1,
-  onFail: () => {},
-  onNotFound: () => {},
-  onPress: () => {},
+  onFail: () => { },
+  onNotFound: () => { },
+  onPress: () => { },
   onTimeout: () => console.warn('google places autocomplete: request timeout'),
   placeholder: '',
   predefinedPlaces: [],
