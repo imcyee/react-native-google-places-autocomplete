@@ -1,5 +1,6 @@
 import * as React from 'react';
 import {
+  FlatList,
   ImageStyle,
   StyleProp,
   TextInput,
@@ -366,7 +367,7 @@ interface RequestUrl {
   headers?: Record<string, string>;
 }
 
-interface GooglePlacesAutocompleteProps {
+interface GooglePlacesAutocompleteProps extends FlatList {
   autoFillOnNotFound?: boolean;
   /** Will add a 'Current location' button at the top of the predefined places list */
   currentLocation?: boolean;
